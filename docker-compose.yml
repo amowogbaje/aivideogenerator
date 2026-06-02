@@ -1,0 +1,67 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: story_video_db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: local_secure_password
+      POSTGRES_DB: story_video_gen
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - app_network
+
+  redis:
+    image: redis:7-alpine
+    container_name: story_video_broker
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - app_network
+
+  web:
+    build: .
+    container_name: story_video_api
+    command: uvicorn app.main:create_app --host 0.0.0.0 --port 4455 --reload
+    volumes:
+      - .:/app
+    ports:
+      - "4455:4455"
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://postgres:local_secure_password@db:5432/story_video_gen
+      - REDIS_URL=redis://redis:6379/0
+    depends_on:
+      - db
+      - redis
+    networks:
+      - app_network
+
+  celery_worker:
+    build: .
+    container_name: story_video_worker
+    command: celery -A app.celery_app.celery_app worker --loglevel=info --concurrency=2
+    volumes:
+      - .:/app
+      - ./logs:/app/logs
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://postgres:local_secure_password@db:5432/story_video_gen
+      - REDIS_URL=redis://redis:6379/0
+    depends_on:
+      - redis
+      - db
+    networks:
+      - app_network
+
+networks:
+  app_network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  redis_data:

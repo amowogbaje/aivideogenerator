@@ -1,0 +1,11 @@
+fastapi==0.111.0
+uvicorn==0.30.1
+pydantic==2.7.4
+pydantic-settings==2.3.4
+sqlalchemy==2.0.31
+asyncpg==0.29.0
+celery==5.4.0
+redis==5.0.6
+httpx==0.27.0
+aiofiles==23.2.1
+google-genai==1.5.0
