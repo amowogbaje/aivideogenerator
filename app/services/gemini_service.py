@@ -1,8 +1,6 @@
-import os
 import json
 import logging
 import re
-import httpx
 from google import genai
 from google.genai.types import GenerateContentConfig
 from pydantic import BaseModel, Field
@@ -99,52 +97,3 @@ class GeminiService:
         except Exception as e:
             logger.error(f"Critical exception occurred inside Gemini request layer: {str(e)}")
             raise e
-
-
-
-    @staticmethod
-    async def process_audio_to_scenes(audio_url: str) -> list[dict]:
-        """
-        Asynchronously downloads source audio, passes it to Gemini's 
-        multimodal infrastructure, and outputs the structured scene array.
-        """
-        local_path = f"/tmp/gemini_input_{os.getpid()}.mp3"
-        
-        # 1. Non-blocking stream download for Gemini's File ingestion engine
-        async with httpx.AsyncClient(timeout=60.0) as http_client:
-            async with http_client.stream("GET", audio_url, follow_redirects=True) as response:
-                response.raise_for_status()
-                with open(local_path, "wb") as f:
-                    async for chunk in response.aiter_bytes(chunk_size=1024 * 1024):
-                        f.write(chunk)
-        
-        try:
-            # 2. Upload using the async client (.aio)
-            uploaded_audio = await client.aio.files.upload(file=local_path)
-            
-            instruction = """
-            Analyze this audio file. Transcribe the narration spoken, and partition 
-            the timeline sequentially into descriptive scene blocks.
-            Return a strict JSON array matching this data model structure:
-            [
-              {
-                "scene_number": 1,
-                "narration_chunk": "The exact snippet of transcribed spoken text for this moment",
-                "visual_prompt": "A vivid, descriptive prompt suitable for generating an image asset"
-              }
-            ]
-            Return ONLY the raw JSON block. No markdown strings.
-            """
-            
-            # 3. Request multi-modal inference
-            response = await client.aio.models.generate_content(
-                model='gemini-2.5-flash',
-                contents=[instruction, uploaded_audio]
-            )
-            
-            raw_json = response.text.replace('```json', '').replace('```', '').strip()
-            return json.loads(raw_json)
-            
-        finally:
-            if os.path.exists(local_path):
-                os.remove(local_path)
