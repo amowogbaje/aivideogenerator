@@ -1,5 +1,6 @@
 import uuid
-from sqlalchemy import Column, String, Integer, ForeignKey, Text
+from datetime import datetime
+from sqlalchemy import Column, String, Integer, ForeignKey, Text, DateTime
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from app.database import Base
@@ -11,8 +12,12 @@ class VideoProject(Base):
     status = Column(String, default="QUEUED")  # QUEUED, PROCESSING, COMPILING, COMPLETED, FAILED
     prompt = Column(Text, nullable=True)
     story_text = Column(Text, nullable=True)
+    audio_url = Column(String, nullable=True)
     aspect_ratio = Column(String, default="9:16")
     final_video_url = Column(String, nullable=True)
+
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     scenes = relationship("VideoScene", back_populates="project", cascade="all, delete-orphan")
 
