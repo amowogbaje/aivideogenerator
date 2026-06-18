@@ -7,7 +7,8 @@ from app.services.ai_providers import (
     DeepInfraProvider, 
     TogetherAIProvider, 
     HuggingFaceProvider, 
-    FalProvider
+    FalProvider,
+    GeminiImageProvider
 )
 
 logger = logging.getLogger("app.tasks.video_pipeline")
@@ -88,7 +89,13 @@ class VideoAPIService:
             logger.info(f"Hugging Face generation successful. Received {len(img_bytes)} bytes.")
             # Compile raw binary picture bytes directly into a local MP4 file path
             return VideoAPIService._compile_image_to_mp4(img_bytes, target_clip_path)
-
+        
+        elif provider == "gemini":
+            img_bytes = await GeminiImageProvider.generate_image_bytes(visual_prompt, aspect_ratio)
+            logger.info(f"Gemini Imagen generation successful. Received {len(img_bytes)} bytes.")
+            # Compiles raw binary bytes from Imagen straight into a local MP4 file path
+            return VideoAPIService._compile_image_to_mp4(img_bytes, target_clip_path)
+            
         # ----------------------------------------------------
         # 🎥 LIVE PRODUCTION: PREMIUM NATIVE TEXT-TO-VIDEO PIPELINE
         # ----------------------------------------------------

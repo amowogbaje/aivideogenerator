@@ -12,6 +12,7 @@ class VideoCreateSchema(BaseModel):
     prompt: Optional[str] = Field(None, description="Core idea for AI to expand from scratch")
     story_text: Optional[str] = Field(None, description="Pre-written entire script/manuscript text")
     aspect_ratio: AspectRatioEnum = AspectRatioEnum.VERTICAL
+    audio_url: Optional[str] = Field(None, description="Provide an existing audio/voiceover file URL.")
     voice_id: str = "pNInz6obpgmqHCgfkJZx"
     art_style: str = "Cinematic realism"
     target_duration_seconds: int = 60

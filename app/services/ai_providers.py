@@ -1,6 +1,9 @@
 import httpx
 import asyncio
 import logging
+from google import genai
+from google.genai import types
+from google.genai.errors import ClientError
 from app.config import settings
 from huggingface_hub import InferenceClient
 from io import BytesIO
@@ -84,6 +87,35 @@ class HuggingFaceProvider:
 
         response.raise_for_status()
         return response.content
+
+class GeminiImageProvider:
+    @staticmethod
+    async def generate_image_bytes(visual_prompt: str, aspect_ratio: str) -> bytes:
+        model_name = "gemini-2.5-flash-image"
+        
+        try:
+            logger.info("Dispatching asynchronous network request to Gemini 2.5 Flash Image gen...")
+            client = genai.Client(api_key=settings.GEMINI_API_KEY)
+            
+            response = await client.aio.models.generate_content(
+                model=model_name,
+                contents=[visual_prompt],
+                config=types.GenerateContentConfig(
+                    response_modalities=["IMAGE", "TEXT"],
+                    # ← response_mime_type removed entirely
+                )
+            )
+            
+            if response.candidates:
+                for part in response.candidates[0].content.parts:
+                    if part.inline_data and part.inline_data.data:
+                        return part.inline_data.data  # raw bytes, already JPEG by default
+                        
+            raise RuntimeError("Model responded successfully but returned no image parts.")
+            
+        except Exception as e:
+            logger.error(f"Gemini native image generation failed: {str(e)}")
+            raise
 
 
 class FalProvider:

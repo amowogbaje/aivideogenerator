@@ -12,6 +12,7 @@ class VideoProject(Base):
     status = Column(String, default="QUEUED")  # QUEUED, PROCESSING, COMPILING, COMPLETED, FAILED
     prompt = Column(Text, nullable=True)
     story_text = Column(Text, nullable=True)
+    audio_url = Column(String, nullable=True)
     aspect_ratio = Column(String, default="9:16")
     final_video_url = Column(String, nullable=True)
 
