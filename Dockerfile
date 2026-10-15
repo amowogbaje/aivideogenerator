@@ -1,30 +1,23 @@
+# --- build the React UI ---
+FROM node:22-slim AS ui
+WORKDIR /ui
+COPY frontend/package*.json ./
+RUN npm ci
+COPY frontend/ ./
+RUN npm run build
+
+# --- API + UI in one image ---
 FROM python:3.12-slim
-
-# Install core runtime dependencies, including CA Certificates for SSL
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    build-essential \
-    libpq-dev \
-    ffmpeg \
-    curl \
-    ca-certificates \
-    && update-ca-certificates \
+# ffmpeg renders the video; fonts-dejavu-core is what the burned-in captions use; espeak-ng = offline fallback voice
+RUN apt-get update && apt-get install -y --no-install-recommends ffmpeg espeak-ng fonts-dejavu-core \
     && rm -rf /var/lib/apt/lists/*
-
 WORKDIR /app
-
-# Prevent Python from writing .pyc artifacts and enable real-time log printing
-ENV PYTHONDONTWRITEBYTECODE=1
-ENV PYTHONUNBUFFERED=1
-
-# Cache and build dependencies
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
-
-# Bind full application source files
-COPY . .
-
-# EXPOSE is kept for documentation of the API port
-EXPOSE 4455
-
-# Set entrypoint to run your celery worker
-CMD ["celery", "-A", "app.celery_app.celery_app", "worker", "--loglevel=info", "--concurrency=2"]
+COPY backend/requirements.txt backend/requirements.txt
+RUN pip install --no-cache-dir -r backend/requirements.txt
+COPY backend/ backend/
+COPY --from=ui /ui/dist frontend/dist
+WORKDIR /app/backend
+ENV DATA_DIR=/data DATABASE_URL=sqlite+aiosqlite:////data/studio.db
+VOLUME /data
+EXPOSE 8000
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]

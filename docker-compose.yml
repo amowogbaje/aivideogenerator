@@ -1,76 +1,8 @@
-version: '3.8'
-
 services:
-  db:
-    image: postgres:16-alpine
-    container_name: story_video_db
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: local_secure_password
-      POSTGRES_DB: story_video_gen
-    ports:
-      - "5432:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    networks:
-      - app_network
-
-  redis:
-    image: redis:7-alpine
-    container_name: story_video_broker
-    ports:
-      - "6379:6379"
-    volumes:
-      - redis_data:/data
-    networks:
-      - app_network
-
-  web:
+  studio:
     build: .
-    container_name: story_video_api
-    command: uvicorn app.main:create_app --host 0.0.0.0 --port 4455 --reload
-    volumes:
-      - .:/app
-    ports:
-      - "4455:4455"
-    # 👇 ADDED THIS: Tells Docker to inject your .env variables here
-    env_file:
-      - .env
-    environment:
-      - DATABASE_URL=postgresql+asyncpg://postgres:local_secure_password@db:5432/story_video_gen
-      - REDIS_URL=redis://redis:6379/0
-    depends_on:
-      - db
-      - redis
-    networks:
-      - app_network
-
-  celery_worker:
-    build: .
-    container_name: story_video_worker
-    # user: "1000:1000"
-    command: celery -A app.celery_app.celery_app worker --loglevel=info --concurrency=2
-    extra_hosts:
-      - "api-inference.huggingface.co:18.154.148.169"
-    volumes:
-      - .:/app
-      - ./logs:/app/logs
-    # 👇 ADDED THIS: Tells Docker to inject your .env variables here too
-    env_file:
-      - .env
-    environment:
-      - DATABASE_URL=postgresql+asyncpg://postgres:local_secure_password@db:5432/story_video_gen
-      - REDIS_URL=redis://redis:6379/0
-    depends_on:
-      - redis
-      - db
-    networks:
-      - app_network
-
-networks:
-  app_network:
-    driver: bridge
-
+    ports: ["8000:8000"]
+    env_file: [backend/.env]      # copy backend/.env.example to backend/.env first
+    volumes: ["studio-data:/data"]
 volumes:
-  postgres_data:
-  redis_data:
+  studio-data:
