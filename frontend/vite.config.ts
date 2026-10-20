@@ -9,5 +9,5 @@ export default defineConfig({
   plugins: [react()],
   // `npm run test:e2e` drives the real UI against a running backend (E2E_BACKEND, default http://127.0.0.1:8000).
   test: { environment: 'jsdom', testTimeout: 300_000, hookTimeout: 60_000 },
-  server: { port: 5173, proxy: { '/api': backend, '/media': backend } },
+  server: { host: true, port: 5173, proxy: { '/api': backend, '/media': backend } },
 })

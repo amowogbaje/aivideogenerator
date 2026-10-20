@@ -1,8 +1,27 @@
+# Backend API on :8000, frontend (Vite dev server, hot reload) on :5173.
+# First time:  cp backend/.env.example backend/.env   then   docker compose up --build
 services:
-  studio:
-    build: .
+  backend:
+    build: ./backend
     ports: ["8000:8000"]
-    env_file: [backend/.env]      # copy backend/.env.example to backend/.env first
+    env_file: [backend/.env]
+    environment:
+      # Override the relative paths from .env so data lives in the volume.
+      DATA_DIR: /data
+      DATABASE_URL: sqlite+aiosqlite:////data/studio.db
     volumes: ["studio-data:/data"]
+
+  frontend:
+    build: ./frontend
+    ports: ["5173:5173"]
+    environment:
+      # Inside the compose network the API is reachable by service name, not localhost.
+      VITE_BACKEND_URL: http://backend:8000
+      CHOKIDAR_USEPOLLING: "true"      # reliable file-watching for bind mounts on Windows/macOS
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules              # keep the image's node_modules, don't shadow with the host's
+    depends_on: [backend]
+
 volumes:
   studio-data:

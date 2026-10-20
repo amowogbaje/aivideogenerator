@@ -33,7 +33,8 @@ npm run dev
 ```
 
 Single process instead: `cd frontend && npm run build`, then run only the backend — it serves the built UI on :8000.
-Docker: `cp backend/.env.example backend/.env && docker compose up --build` (not tested in my environment).
+Docker: `cp backend/.env.example backend/.env && docker compose up --build` → UI on http://localhost:5173, API on http://localhost:8000.
+Single-image build (API + built UI on :8000): `docker build -f Dockerfile.single -t studio . && docker run -p 8000:8000 --env-file backend/.env studio`.
 
 ### Real output vs. demo mode
 With no API keys everything still runs end to end using **demo providers** (rule-based script analysis, placeholder
